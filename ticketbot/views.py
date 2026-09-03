@@ -71,3 +71,30 @@ class CreateTicketView(discord.ui.View):
         await interaction.followup.send(f"Ticket opened: {channel.mention}", ephemeral=True)
 
 
+class TicketControlView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="Close Ticket",
+        style=discord.ButtonStyle.danger,
+        emoji="🔒",
+        custom_id="ticketbot:close_ticket",
+    )
+    async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        ticket = await db.get_ticket_by_channel(interaction.channel_id)
+        if not ticket:
+            await interaction.response.send_message("This channel is not an active ticket.", ephemeral=True)
+            return
+
+        # print(f"DEBUG: close initiated for ticket {ticket['id']} by {interaction.user.id}")
+        await interaction.response.send_message("Closing ticket in 5 seconds...")
+        duration_sec = await db.close_ticket(ticket["id"], closed_by_id=interaction.user.id)
+
+        if duration_sec is not None:
+            metrics.record_ticket_resolved(guild_id=str(interaction.guild_id), duration_seconds=duration_sec)
+
+        try:
+            await interaction.channel.delete(reason=f"Ticket closed by {interaction.user}")
+        except discord.HTTPException as e:
+            log.warning("failed to delete ticket channel %s: %s", interaction.channel_id, e)
