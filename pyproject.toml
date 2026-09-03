@@ -4,16 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ticketbot"
-version = "0.1.0"
+version = "0.1.2"
 description = "Discord ticket bot with sqlite and prometheus stats"
 authors = [{ name = "Sam", email = "sam@local" }]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "discord.py>=2.3.0",
+    "discord.py>=2.3.2",
     "aiosqlite>=0.19.0",
-    "prometheus-client>=0.17.0",
+    "prometheus-client>=0.19.0",
+    "pydantic-settings>=2.1.0",
     "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+fast = ["uvloop>=0.19.0; platform_system != 'Windows'"]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.6",
 ]
 
 [project.scripts]
