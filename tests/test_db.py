@@ -1,5 +1,6 @@
 import pytest
 import aiosqlite
+import time
 from ticketbot import db
 
 
@@ -40,9 +41,44 @@ async def test_close_ticket(temp_db):
     assert duration is not None
     assert duration >= 0
 
-    # once closed, active lookup should return None
     active = await db.get_active_ticket_for_user(user_id=300, guild_id=100)
     assert active is None
 
     by_chan = await db.get_ticket_by_channel(200)
     assert by_chan is None
+
+
+@pytest.mark.asyncio
+async def test_stale_tickets_query(temp_db):
+    # create two tickets, backdate one by 3600s
+    t1 = await db.create_ticket(guild_id=1, channel_id=10, user_id=100, user_name="old_user")
+    t2 = await db.create_ticket(guild_id=1, channel_id=20, user_id=200, user_name="new_user")
+
+    two_hours_ago = time.time() - 7200
+    async with aiosqlite.connect(db.DB_PATH) as conn:
+        await conn.execute(
+            "UPDATE tickets SET last_activity_at = ? WHERE id = ?",
+            (two_hours_ago, t1),
+        )
+        await conn.commit()
+
+    stale = await db.get_stale_tickets(stale_threshold_seconds=3600)
+    stale_ids = [row["id"] for row in stale]
+    assert t1 in stale_ids
+    assert t2 not in stale_ids
+
+
+@pytest.mark.asyncio
+async def test_touch_ticket_activity(temp_db):
+    tid = await db.create_ticket(guild_id=1, channel_id=11, user_id=101, user_name="touch_test")
+    async with aiosqlite.connect(db.DB_PATH) as conn:
+        await conn.execute("UPDATE tickets SET last_activity_at = 1000 WHERE id = ?", (tid,))
+        await conn.commit()
+
+    await db.touch_ticket_activity(channel_id=11)
+
+    async with aiosqlite.connect(db.DB_PATH) as conn:
+        conn.row_factory = aiosqlite.Row
+        async with conn.execute("SELECT last_activity_at FROM tickets WHERE id = ?", (tid,)) as cur:
+            row = await cur.fetchone()
+            assert row["last_activity_at"] > 1000
