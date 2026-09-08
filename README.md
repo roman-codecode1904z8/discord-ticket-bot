@@ -37,3 +37,5 @@ Scrape `http://localhost:9100/metrics`. Exported gauges and histograms:
 - `ticketbot_stale_tickets_count`: Tickets with no staff reply for longer than `STALE_HOURS`.
 - `ticketbot_resolution_duration_seconds`: Histogram of time elapsed from ticket creation to close.
 - `ticketbot_first_response_seconds`: Histogram of time between ticket creation and first staff message.
+
+<!-- checked: 2026-09-08 -->
