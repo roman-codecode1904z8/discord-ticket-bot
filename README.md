@@ -38,4 +38,4 @@ Scrape `http://localhost:9100/metrics`. Exported gauges and histograms:
 - `ticketbot_resolution_duration_seconds`: Histogram of time elapsed from ticket creation to close.
 - `ticketbot_first_response_seconds`: Histogram of time between ticket creation and first staff message.
 
-<!-- checked: 2026-09-11 -->
+<!-- checked: 2026-09-12 -->
